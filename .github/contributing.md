@@ -55,5 +55,5 @@ Code can be edited and changed on the `main` branch, any large features or
 
 
 ## Extras
-If there's anything you think was missed please open a [new discussion](https://github.com/Oliver-Akins/file-hider/discussions/new?category=general)
+If there's anything you think was missed please open a [new discussion](https://github.com/vincentscode/regex-file-hider/discussions/new?category=general)
 on GitHub so it can be discussed.

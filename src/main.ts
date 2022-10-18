@@ -1,8 +1,8 @@
 import { VisibilityToggleCommand } from './commands/toggleVisibility';
 import { VisibilityToggleSetting } from './settings/hiddenToggle';
 import { App, Plugin, PluginSettingTab, TFolder } from 'obsidian';
-import { ManageHiddenPaths } from './settings/manageHiddenPaths';
-import { changePathVisibility } from './utils';
+import { ManageHiddenPaths as ManageHidden } from './settings/manageHiddenPaths';
+import { changePathVisibility, changeElementVisibility, waitForElement } from './utils';
 
 interface FileHiderSettings {
 	hidden: boolean;
@@ -18,96 +18,52 @@ export default class FileHider extends Plugin {
 
 	style: CSSStyleSheet|null = null;
 
+	checkAndApplyVisibility(app: App) {
+		console.log("regex-file-hider: checkAndApplyVisibility")
+		for (const file of this.app.vault.getAllLoadedFiles()) {
+			const path = file.path;
+			const name = file.name;
+			for (const filterRegex of this.settings.hiddenList) {
+				if (name.match(new RegExp(filterRegex))) {
+					waitForElement(`[data-path="${path}"]`).then((e: HTMLElement) => {
+						changeElementVisibility(e, this.settings.hidden);
+					})
+					break;
+				}
+			}
+		};
+	}
+
 	async onload() {
 		await this.loadSettings();
 
-		this.registerEvent(
-			this.app.workspace.on(`file-menu`, (menu, file) => {
-				if (file instanceof TFolder) {
-					menu.addItem((i) => {
-						if (this.settings.hiddenList.includes(file.path)) {
-							i.setTitle(`Unhide Folder`)
-							.setIcon(`eye`)
-							.onClick(() => {
-								this.unhidePath(file.path);
-							});
-						} else {
-							i.setTitle(`Hide Folder`)
-							.setIcon(`eye-off`)
-							.onClick(() => {
-								changePathVisibility(file.path, this.settings.hidden);
-								this.settings.hiddenList.push(file.path);
-								this.saveSettings();
-							});
-						};
-					});
-				} else {
-					menu.addItem((i) => {
-						if (this.settings.hiddenList.includes(file.path)) {
-							i.setTitle(`Unhide File`)
-							.setIcon(`eye`)
-							.onClick((e) => {
-								this.unhidePath(file.path);
-							});
-						} else {
-							i.setTitle(`Hide File`)
-							.setIcon(`eye-off`)
-							.onClick((e) => {
-								changePathVisibility(file.path, this.settings.hidden);
-								this.settings.hiddenList.push(file.path);
-								this.saveSettings();
-							});
-						};
-					});
-				};
-			})
-		);
-
 		this.app.workspace.onLayoutReady(() => {
-			for (const path of this.settings.hiddenList) {
-				changePathVisibility(path, this.settings.hidden);
-			};
-		});
+			this.checkAndApplyVisibility(this.app);
 
+			this.app.vault.on('modify', () => this.checkAndApplyVisibility(this.app))
+			this.app.vault.on('create', () => this.checkAndApplyVisibility(this.app))
+			this.app.vault.on('rename', () => this.checkAndApplyVisibility(this.app))
+		});
 		new VisibilityToggleCommand(this);
 		this.addSettingTab(new FileHiderSettingsTab(this.app, this));
 	};
 
-	/*
-	Loads the config settings, with defaults created where needed.
-	*/
 	async loadSettings() {
 		this.settings = Object.assign({}, this.settings, await this.loadData());
 	};
 
-	/* Saves the setting data */
 	async saveSettings() {
 		await this.saveData(this.settings);
 	};
 
-	/*
-	Enables/Disables the file visibility based. (gets the stylesheet if needed)
-	*/
 	toggleVisibility() {
 		this.settings.hidden = !this.settings.hidden;
-		for (const path of this.settings.hiddenList) {
-			changePathVisibility(path, this.settings.hidden);
-		};
-		this.saveSettings();
-	};
-
-	unhidePath(path: string) {
-		let i = this.settings.hiddenList.indexOf(path);
-		this.settings.hiddenList.splice(i, 1);
-		changePathVisibility(path, false);
+		this.checkAndApplyVisibility(this.app);
 		this.saveSettings();
 	};
 };
 
 
-/**
- * All of the settings for the FileHider
- */
 class FileHiderSettingsTab extends PluginSettingTab {
 	plugin: FileHider;
 
@@ -121,6 +77,6 @@ class FileHiderSettingsTab extends PluginSettingTab {
 
 		container.empty();
 		VisibilityToggleSetting.create(this.plugin, container);
-		ManageHiddenPaths.create(this.plugin, container);
+		ManageHidden.create(this.plugin, container);
 	};
 };

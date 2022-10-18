@@ -1,7 +1,7 @@
 {
-  "name": "oa-file-hider",
-  "version": "1.1.0",
-  "description": "An Obsidian plugin that allows hiding files and folders in the built-in file explorer",
+  "name": "regex-file-hider",
+  "version": "1.0.0",
+	"description": "An Obsidian plugin that allows hiding files and folders in the built-in file explorer for a given RegEx",
   "main": "main.js",
   "scripts": {
     "dev": "echo Use command: make dev",
@@ -9,7 +9,7 @@
     "version": "echo This is a part of: make release"
   },
   "keywords": [],
-  "author": "Oliver Akins",
+  "author": "Vincent Schmandt",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^16.11.6",
